@@ -71,14 +71,31 @@ def update_integrante(integrante: UpdatingIntegranteModel):
     
   return Response('User was updated', status.HTTP_200_OK)
 
-@integrante_router.get('/integrante/')
+@integrante_router.get('/integrante')
 def get_integrante(id: int = None):
   if id == None:
     return Response('', status.HTTP_406_NOT_ACCEPTABLE)
   
   integrante = conn.execute(integrantes.select().where(integrantes.c.id_integrante == id)).first()
 
+  if not integrante:
+    return Response('No Integrante with such id', status.HTTP_404_NOT_FOUND)
+
   integrante_response = {key: value for key, value in integrante._mapping.items() if key != 'contrasena'}
   
   return integrante_response
+
+
+@integrante_router.delete('/integrante')
+def delete_integrante(id: int = None):
+  if id == None:
+    return Response('', status.HTTP_406_NOT_ACCEPTABLE)
+
+  integrante = conn.execute(integrantes.select().where(integrantes.c.id_integrante == id)).first()
+
+  if not integrante:
+    return Response('No Integrante with such id', status.HTTP_404_NOT_FOUND)
   
+  changes = conn.execute(integrantes.update().where(integrantes.c.id_integrante == id).values(activo=False)).last_updated_params()
+
+  return changes
