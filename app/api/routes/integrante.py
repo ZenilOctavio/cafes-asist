@@ -1,28 +1,31 @@
 from fastapi import APIRouter, status, Response
 from models.integrante import integrantes
 from sql.database import conn
-from schemas.integrante import IntegranteModel
+from schemas.integrante import IntegranteModel, UpdatingIntegranteModel, UpdatableColumns
 from hashlib import sha256
-from ..validators.integrante_data import validate_email, validate_names, validate_phone
+from ..validators.integrante_data import validate
 from uuid import uuid4
 from datetime import datetime
 
-integrante_router = APIRouter(prefix="/api")
+integrante_router = APIRouter(prefix="/api/integrante")
 
-@integrante_router.post('/integrante/create')
+@integrante_router.post('/create')
 def create_integrante(integrante: IntegranteModel):
   
-  if not validate_email(integrante.email):
+  if not validate(integrante.email, 'email'):
     return Response('Not valid email', status_code=status.HTTP_406_NOT_ACCEPTABLE)
 
-  if not validate_names(integrante.nombres):
+  if not validate(integrante.nombres, 'nombres'):
     return Response('Not valid names', status_code=status.HTTP_406_NOT_ACCEPTABLE)
 
-  if not validate_names(integrante.apellidos):
+  if not validate(integrante.apellidos, 'nombres'):
     return Response('Not valid lastnames', status_code=status.HTTP_406_NOT_ACCEPTABLE)
 
-  if not validate_phone(integrante.telefono):
+  if not validate(integrante.telefono, 'telefono'):
     return Response('Not valid phone', status_code=status.HTTP_406_NOT_ACCEPTABLE)
+
+  if not validate(integrante.contrasena, 'contrasena'):
+    return Response('Not valid password', status_code=status.HTTP_406_NOT_ACCEPTABLE)
   
   nuevo_integrante = {
     "tipo": integrante.tipo,
@@ -32,7 +35,7 @@ def create_integrante(integrante: IntegranteModel):
     "telefono": integrante.telefono,
   }
   
-  nuevo_integrante["id_integrante"] = (uuid4().int >> 96) - 1
+  nuevo_integrante["id_integrante"] = ((uuid4().int >> 96) & (0xFFFFFFFF))
   nuevo_integrante["contrasena"] = sha256(integrante.contrasena.encode()).hexdigest()
   nuevo_integrante["activo"] = True
   nuevo_integrante["fecha_registro"] = str(datetime.utcnow())
@@ -43,3 +46,27 @@ def create_integrante(integrante: IntegranteModel):
   conn.commit()
   
   return Response(f'Integrante created: {result.lastrowid}', status_code=status.HTTP_201_CREATED)
+
+@integrante_router.put('/update')
+def update_integrante(integrante: UpdatingIntegranteModel):
+  id_integrante = integrante.id_integrante
+  
+  integrante_db = conn.execute(integrantes.select().where(integrantes.c.id_integrante == id_integrante)).first()
+  changes: list[int] = [] 
+  integrante_dict = dict(integrante)
+  integrante_dict['contrasena'] = sha256(integrante.contrasena.encode()).hexdigest()
+
+  changes: list[UpdatableColumns] = []
+  
+  for column in UpdatableColumns.__args__:
+    if integrante_dict[column] != integrante_db._mapping[column]:
+      changes.append(column)
+
+  if not len(changes):
+    return Response('No changes done', status.HTTP_200_OK)
+  
+  
+  conn.execute(integrantes.update().where(integrantes.c.id_integrante == id_integrante).values(**{ change: integrante_dict[change] for change in changes }))
+  conn.commit()
+    
+  return Response('User was updated', status.HTTP_200_OK)

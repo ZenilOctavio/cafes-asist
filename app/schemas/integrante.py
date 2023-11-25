@@ -1,6 +1,6 @@
-from typing import Optional
-from datetime import datetime
 from pydantic import BaseModel
+from typing import Literal
+
 
 class IntegranteModel(BaseModel):
   tipo:str
@@ -10,3 +10,8 @@ class IntegranteModel(BaseModel):
   telefono:str
   contrasena:str
   
+class UpdatingIntegranteModel(IntegranteModel):
+  id_integrante: int
+
+
+UpdatableColumns = Literal["email", "nombres", "apellidos", "telefono", "contrasena"]  

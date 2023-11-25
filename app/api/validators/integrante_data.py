@@ -1,26 +1,21 @@
 import re
+from typing import Literal
+from schemas.integrante import UpdatableColumns
 
-def validate_email(email: str) -> bool:
-  regex = re.compile(r'([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9-]+(\.[A-Z|a-z]{2,})+')
+validation_re: dict[UpdatableColumns, str] = {
+  "email": r'([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9-]+(\.[A-Z|a-z]{2,})+',
+  "nombres": r'^[A-Za-z ]{1,50}$',
+  "apellidos": r'^[A-Za-z ]{1,50}$',
+  "telefono": r'^\d{10}$',
+  "contrasena": r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$'
+}
+
+
+def validate(value: str, property: UpdatableColumns ) -> bool:
+  regex = re.compile(validation_re[property])
   
-  if regex.fullmatch(email):
+  if regex.fullmatch(value):
     return True
   
   return False
 
-def validate_names(name: str) -> bool:
-  regex = re.compile(r'^[A-Za-z ]{1,50}$')
-
-  if regex.fullmatch(name):
-    return True
-  
-  return False
-
-def validate_phone(phone: str) -> bool:
-  regex = re.compile(r'^\d{10}$')
-
-  if regex.fullmatch(phone):
-    return True
-  
-  return False
-  
