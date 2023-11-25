@@ -17,7 +17,7 @@ SECRET_KEY = "SecretKeyForHashingInMyApp"
 ALGORITHM = "HS256"
 EXPIRES_IN_MINUTES = 600
 
-session_router = APIRouter(prefix="/api")
+session_router = APIRouter()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -108,3 +108,7 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
   access_token = create_access_token(data={"sub": user.email},expires_delta=access_token_expires)
   
   return {"access_token": access_token, "token_type": "bearer"}
+
+@session_router.get('/token/validate')
+async def validate_token(integrante: IntegranteModel = Depends(get_current_active_integrante)):
+  return integrante
