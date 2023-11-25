@@ -22,7 +22,7 @@ session_router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
-def verify_password(plain_password: str, hashed_password: str):
+def verify_password(plain_password: str, hashed_password: str) -> str:
   password_hash = sha256(plain_password.encode()).hexdigest()
   
   return hashed_password == password_hash
@@ -40,7 +40,7 @@ def get_integrante(email: str) -> IntegranteModel:
   return IntegranteModel(**integrante_dict)
   
 
-def authenticate_integrante(email: str, password:str):
+def authenticate_integrante(email: str, password:str) -> IntegranteModel:
   integrante = get_integrante(email)
   
   if not integrante:
@@ -52,7 +52,7 @@ def authenticate_integrante(email: str, password:str):
   return integrante
 
 
-def create_access_token(data: dict, expires_delta: timedelta | None):
+def create_access_token(data: dict, expires_delta: timedelta | None) -> str:
   to_encode = data.copy()
   
   if expires_delta:
@@ -88,7 +88,7 @@ async def get_current_integrante(token: str = Depends(oauth2_scheme)) -> Integra
   
   return integrante
 
-async def get_current_active_integrante(current_integrante: IntegranteModel = Depends(get_current_integrante)):
+async def get_current_active_integrante(current_integrante: IntegranteModel = Depends(get_current_integrante)) -> IntegranteModel:
   if not current_integrante.activo:
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive integrante")
   
