@@ -1,7 +1,7 @@
 from fastapi import APIRouter, status, Response
 from models.integrante import integrantes
 from sql.database import conn
-from schemas.integrante import IntegranteModel, UpdatingIntegranteModel, UpdatableColumns
+from schemas.integrante import CreatingIntegranteModel, UpdatingIntegranteModel, UpdatableColumns
 from hashlib import sha256
 from ..validators.integrante_data import validate
 from uuid import uuid4
@@ -10,7 +10,7 @@ from datetime import datetime
 integrante_router = APIRouter(prefix="/api")
 
 @integrante_router.post('/integrante')
-def create_integrante(integrante: IntegranteModel):
+def create_integrante(integrante: CreatingIntegranteModel):
   
   if not validate(integrante.email, 'email'):
     return Response('Not valid email', status_code=status.HTTP_406_NOT_ACCEPTABLE)
