@@ -7,9 +7,9 @@ from ..validators.integrante_data import validate
 from uuid import uuid4
 from datetime import datetime
 
-integrante_router = APIRouter(prefix="/api/integrante")
+integrante_router = APIRouter(prefix="/api")
 
-@integrante_router.post('/create')
+@integrante_router.post('/integrante')
 def create_integrante(integrante: IntegranteModel):
   
   if not validate(integrante.email, 'email'):
@@ -47,7 +47,7 @@ def create_integrante(integrante: IntegranteModel):
   
   return Response(f'Integrante created: {result.lastrowid}', status_code=status.HTTP_201_CREATED)
 
-@integrante_router.put('/update')
+@integrante_router.put('/integrante')
 def update_integrante(integrante: UpdatingIntegranteModel):
   id_integrante = integrante.id_integrante
   
@@ -70,3 +70,15 @@ def update_integrante(integrante: UpdatingIntegranteModel):
   conn.commit()
     
   return Response('User was updated', status.HTTP_200_OK)
+
+@integrante_router.get('/integrante/')
+def get_integrante(id: int = None):
+  if id == None:
+    return Response('', status.HTTP_406_NOT_ACCEPTABLE)
+  
+  integrante = conn.execute(integrantes.select().where(integrantes.c.id_integrante == id)).first()
+
+  integrante_response = {key: value for key, value in integrante._mapping.items() if key != 'contrasena'}
+  
+  return integrante_response
+  
