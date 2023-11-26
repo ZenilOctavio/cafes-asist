@@ -1,5 +1,4 @@
 import re
-from typing import Literal
 from schemas.integrante import UpdatableColumns
 
 validation_re: dict[UpdatableColumns, str] = {
