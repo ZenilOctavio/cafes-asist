@@ -5,7 +5,7 @@ from typing import Literal
 
 tipo_registro = Literal['Entrada', 'Salida']
 
-registro = Table('Registro', meta, 
+registros = Table('Registros', meta, 
                     Column('id_registro', Integer, primary_key=True),
                     Column('id_integrante', Integer, nullable=False),
                     Column('tipo_registro', String(7), nullable=False),
