@@ -48,7 +48,7 @@ def authenticate_integrante(email: str, password:str) -> IntegranteModel:
 def create_access_token(data: dict) -> str:
   to_encode = data.copy()
   
-  to_encode.update({"exp": timedelta(minutes=EXPIRES_IN_MINUTES)})
+  to_encode.update({"exp": datetime.utcnow()+timedelta(minutes=EXPIRES_IN_MINUTES)})
   encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
   
   return encoded_jwt  
