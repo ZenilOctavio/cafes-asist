@@ -4,7 +4,7 @@ from schemas.integrante import IntegranteModel
 from models.integrante import integrantes
 from models.tipos_integrante import tipos_integrante
 from sql.database import conn
-from schemas.tipo_integrante import TipoIntegrante, ValidationColumns, UpdatableColumns
+from schemas.tipo_integrante import TipoIntegrante, UpdatableColumns
 from .integrante import check_for_admin_permission
 from ..validators.tipos_integrante_data import validate
 
