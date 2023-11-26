@@ -5,7 +5,7 @@ from schemas.integrante import IntegranteModel, CreatingIntegranteModel, Updatin
 from hashlib import sha256
 from ..validators.integrante_data import validate
 from datetime import datetime
-from .session import get_current_active_integrante
+from ..dependencies.oauth2 import get_current_active_integrante
 from random import randint
 
 integrante_router = APIRouter(prefix="/api")

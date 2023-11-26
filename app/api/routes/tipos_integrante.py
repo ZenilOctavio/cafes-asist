@@ -1,5 +1,5 @@
 from fastapi import APIRouter, status, HTTPException, Response, Depends
-from .session import get_current_active_integrante
+from ..dependencies.oauth2 import get_current_active_integrante
 from schemas.integrante import IntegranteModel
 from models.integrante import integrantes
 from models.tipos_integrante import tipos_integrante
