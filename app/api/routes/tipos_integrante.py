@@ -90,5 +90,16 @@ def update_tipo_integrante(tipo_integrante: TipoIntegrante, current_integrante: 
     
 
 @tipos_integrante_router.delete('/tipo-integrante')
-def delete_tipo_integrante():
-  pass
+def delete_tipo_integrante(clave_tipo:str | None = None, current_integrante: IntegranteModel = Depends(check_for_admin_permission)):
+  if clave_tipo is None:
+    raise HTTPException(status.HTTP_406_NOT_ACCEPTABLE, 'No clave_tipo provided')
+
+  tipo_db = conn.execute(tipos_integrante.select().where(tipos_integrante.c.clave_tipo == clave_tipo)).first()
+
+  if not tipo_db:
+    raise HTTPException(status.HTTP_404_NOT_FOUND, 'No Tipo_Integrante with such clave_tipo')
+  
+  conn.execute(tipos_integrante.delete().where(tipos_integrante.c.clave_tipo == clave_tipo))
+  conn.commit()
+
+  return Response(f'Tipo_Integrante was successfully deleted {tipo_db._mapping}')
