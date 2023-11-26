@@ -1,31 +1,39 @@
-from fastapi import APIRouter, status, Response
+from fastapi import APIRouter, status, Response, Depends, HTTPException
 from models.integrante import integrantes
 from sql.database import conn
-from schemas.integrante import CreatingIntegranteModel, UpdatingIntegranteModel, UpdatableColumns
+from schemas.integrante import IntegranteModel, CreatingIntegranteModel, UpdatingIntegranteModel, UpdatableColumns
 from hashlib import sha256
 from ..validators.integrante_data import validate
-from uuid import uuid4
 from datetime import datetime
+from .session import get_current_active_integrante
+from random import randint
 
 integrante_router = APIRouter(prefix="/api")
 
+def check_for_admin_permission(current_integrante: IntegranteModel = Depends(get_current_active_integrante)) -> IntegranteModel:
+  if current_integrante.tipo != 'ADM':
+    raise HTTPException(status.HTTP_401_UNAUTHORIZED, 'You have no permissions')
+  
+  return current_integrante
+  
+
 @integrante_router.post('/integrante')
-def create_integrante(integrante: CreatingIntegranteModel):
+def create_integrante(integrante: CreatingIntegranteModel, current_integrante: IntegranteModel = Depends(check_for_admin_permission)):
   
   if not validate(integrante.email, 'email'):
-    return Response('Not valid email', status_code=status.HTTP_406_NOT_ACCEPTABLE)
+    raise HTTPException(status.HTTP_406_NOT_ACCEPTABLE,'Not valid email')
 
   if not validate(integrante.nombres, 'nombres'):
-    return Response('Not valid names', status_code=status.HTTP_406_NOT_ACCEPTABLE)
+    raise HTTPException(status.HTTP_406_NOT_ACCEPTABLE,'Not valid names')
 
   if not validate(integrante.apellidos, 'nombres'):
-    return Response('Not valid lastnames', status_code=status.HTTP_406_NOT_ACCEPTABLE)
+    raise HTTPException(status.HTTP_406_NOT_ACCEPTABLE,'Not valid lastnames')
 
   if not validate(integrante.telefono, 'telefono'):
-    return Response('Not valid phone', status_code=status.HTTP_406_NOT_ACCEPTABLE)
+    raise HTTPException(status.HTTP_406_NOT_ACCEPTABLE,'Not valid phone')
 
   if not validate(integrante.contrasena, 'contrasena'):
-    return Response('Not valid password', status_code=status.HTTP_406_NOT_ACCEPTABLE)
+    raise HTTPException(status.HTTP_406_NOT_ACCEPTABLE,'Not valid password')
   
   nuevo_integrante = {
     "tipo": integrante.tipo,
@@ -35,7 +43,7 @@ def create_integrante(integrante: CreatingIntegranteModel):
     "telefono": integrante.telefono,
   }
   
-  nuevo_integrante["id_integrante"] = ((uuid4().int >> 96) & (0xFFFFFFFF))
+  nuevo_integrante["id_integrante"] = randint(0,2000000)
   nuevo_integrante["contrasena"] = sha256(integrante.contrasena.encode()).hexdigest()
   nuevo_integrante["activo"] = True
   nuevo_integrante["fecha_registro"] = str(datetime.utcnow())
@@ -48,7 +56,7 @@ def create_integrante(integrante: CreatingIntegranteModel):
   return Response(f'Integrante created: {result.lastrowid}', status_code=status.HTTP_201_CREATED)
 
 @integrante_router.put('/integrante')
-def update_integrante(integrante: UpdatingIntegranteModel):
+def update_integrante(integrante: UpdatingIntegranteModel, current_integrante: IntegranteModel = Depends(check_for_admin_permission)):
   id_integrante = integrante.id_integrante
   
   integrante_db = conn.execute(integrantes.select().where(integrantes.c.id_integrante == id_integrante)).first()
@@ -71,15 +79,25 @@ def update_integrante(integrante: UpdatingIntegranteModel):
     
   return Response('User was updated', status.HTTP_200_OK)
 
-@integrante_router.get('/integrante')
-def get_integrante(id: int = None):
-  if id == None:
-    return Response('', status.HTTP_406_NOT_ACCEPTABLE)
+@integrante_router.get('/integrante/{option}')
+def get_integrante(id: int | None = None, option: str = 'me', current_integrante: IntegranteModel = Depends(get_current_active_integrante)):
+  
+  if option == 'me' or id == current_integrante.id_integrante:
+    return {key: value for key, value in dict(current_integrante).items() if key != 'contrasena'}
+   
+  if current_integrante.tipo != 'ADM':
+    raise HTTPException(status.HTTP_401_UNAUTHORIZED, 'You have no permission')  
+  
+  if option == 'all':
+    return conn.execute(integrantes.select()).fetchall()
+  
+  if id is None and option == 'id':
+    raise HTTPException(status.HTTP_406_NOT_ACCEPTABLE, 'No id or option provided')
   
   integrante = conn.execute(integrantes.select().where(integrantes.c.id_integrante == id)).first()
 
   if not integrante:
-    return Response('No Integrante with such id', status.HTTP_404_NOT_FOUND)
+    raise HTTPException(status.HTTP_404_NOT_FOUND, 'No integrante with such id')
 
   integrante_response = {key: value for key, value in integrante._mapping.items() if key != 'contrasena'}
   
@@ -87,7 +105,7 @@ def get_integrante(id: int = None):
 
 
 @integrante_router.delete('/integrante')
-def delete_integrante(id: int = None):
+def delete_integrante(id: int = None, current_integrante: IntegranteModel = Depends(check_for_admin_permission)):
   if id == None:
     return Response('', status.HTTP_406_NOT_ACCEPTABLE)
 
