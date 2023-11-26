@@ -4,7 +4,7 @@ from schemas.integrante import IntegranteModel
 from models.integrante import integrantes
 from models.tipos_integrante import tipos_integrante
 from sql.database import conn
-from schemas.tipo_integrante import TipoIntegrante
+from schemas.tipo_integrante import TipoIntegrante, ValidationColumns, UpdatableColumns
 from .integrante import check_for_admin_permission
 from ..validators.tipos_integrante_data import validate
 
@@ -63,8 +63,31 @@ def create_tipo_integrante(tipo_integrante: TipoIntegrante, current_integrante: 
   
   
 @tipos_integrante_router.put('/tipo-integrante')
-def update_tipo_integrante():
-  pass
+def update_tipo_integrante(tipo_integrante: TipoIntegrante, current_integrante: IntegranteModel = Depends(check_for_admin_permission)):
+  tipo_indb = conn.execute(tipos_integrante.select().where(tipos_integrante.c.clave_tipo == tipo_integrante.clave_tipo)).first()
+  
+  if not tipo_indb:
+    raise HTTPException(status.HTTP_404_NOT_FOUND, 'No such Tipo_Integrante')
+  
+  changes: list[str] = []
+  tipo_dict = dict(tipo_integrante)
+  
+  print(f'Tipo ingresado {tipo_dict}')
+  print(f'Tipo in db {tipo_indb._mapping}')
+  
+  for column in UpdatableColumns.__args__:
+    if tipo_dict[column] != tipo_indb._mapping[column]:
+      changes.append(column)
+  
+  if not len(changes):
+    return Response('No changes done', status.HTTP_200_OK)
+  
+  conn.execute(tipos_integrante.update().where(tipos_integrante.c.clave_tipo == tipo_integrante.clave_tipo).values(**{column: tipo_dict[column] for column in changes}))
+  conn.commit()
+  
+  return Response('Tipo_Integrante updated', status.HTTP_200_OK)
+  
+    
 
 @tipos_integrante_router.delete('/tipo-integrante')
 def delete_tipo_integrante():

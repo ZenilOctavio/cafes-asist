@@ -6,4 +6,6 @@ class TipoIntegrante(BaseModel):
   nombre_tipo: str
   num_horas: int
   
-Columns = Literal['clave_tipo', 'nombre_tipo']
+ValidationColumns = Literal['clave_tipo', 'nombre_tipo']
+
+UpdatableColumns = Literal['nombre_tipo', 'num_horas']

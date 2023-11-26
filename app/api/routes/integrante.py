@@ -60,7 +60,10 @@ def update_integrante(integrante: UpdatingIntegranteModel, current_integrante: I
   id_integrante = integrante.id_integrante
   
   integrante_db = conn.execute(integrantes.select().where(integrantes.c.id_integrante == id_integrante)).first()
-  changes: list[int] = [] 
+  if not integrante_db:
+    raise HTTPException(status.HTTP_404_NOT_FOUND, 'No such Integrante')
+
+  changes: list[str] = [] 
   integrante_dict = dict(integrante)
   integrante_dict['contrasena'] = sha256(integrante.contrasena.encode()).hexdigest()
 
