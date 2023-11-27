@@ -5,3 +5,4 @@ from typing import Optional
 class CreatingRegistroModel(BaseModel):
   fecha_hora: datetime
   id_integrante: Optional[int]
+

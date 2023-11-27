@@ -5,7 +5,7 @@ from schemas.registro import CreatingRegistroModel
 from .integrante import check_for_admin_permission
 from models.registro import registros
 from sql.database import conn
-from sqlalchemy import func, and_, select, insert, Select
+from sqlalchemy import func, and_, select, insert, Select, delete
 from random import randint
 from datetime import datetime
 
@@ -115,11 +115,14 @@ def create_registro(registro_data: CreatingRegistroModel ,current_integrante: In
   
   return Response(f'Registro inserted correctly {new_registro}', status.HTTP_200_OK)
     
-
-@registro_router.put('/registro')
-def update_registro(current_integrante: IntegranteModel = Depends(check_for_admin_permission)):
-  pass
-
-@registro_router.delete('/registro')
-def delete_registro(current_integrante: IntegranteModel = Depends(check_for_admin_permission)):
-  pass
+@registro_router.delete('/registro/{id_registro}')
+def delete_registro(id_registro: int, current_integrante: IntegranteModel = Depends(check_for_admin_permission)):
+  stmt = (
+    delete(registros)
+    .where(registros.c.id_registro == id_registro)
+  )
+  
+  conn.execute(stmt)
+  conn.commit()
+  
+  return Response('Deleting successfully', status.HTTP_200_OK)
