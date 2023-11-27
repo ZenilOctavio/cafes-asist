@@ -5,16 +5,59 @@ from schemas.registro import CreatingRegistroModel
 from .integrante import check_for_admin_permission
 from models.registro import registros
 from sql.database import conn
-from sqlalchemy import func, and_, select, insert
+from sqlalchemy import func, and_, select, insert, Select
 from random import randint
+from datetime import datetime
 
 
 
 registro_router = APIRouter(prefix='/api')
 
 @registro_router.get('/registro/{option}')
-def get_registro(option: str = 'me', current_integrante: IntegranteModel = Depends(get_current_active_integrante)):
-  pass
+def get_registro(option: str = 'me', id: int = None, starting_date: str | None = None, ending_date: str = datetime.now().date().strftime('%Y-%m-%d'), current_integrante: IntegranteModel = Depends(get_current_active_integrante)):
+  if (option == 'all' or (option == 'one' or not(id is None))) and current_integrante.tipo != 'ADM':
+    raise HTTPException(status.HTTP_401_UNAUTHORIZED, 'You have no permission')
+  
+  id_integrante: int = None
+  stmt: Select
+  where_clauses = [func.DATE(registros.c.fecha_hora) <= ending_date]
+  
+  if option == 'me':
+    id_integrante = current_integrante.id_integrante
+  elif option == 'one':
+    if id is None:
+      raise HTTPException(status.HTTP_400_BAD_REQUEST, 'No id specificated')
+    id_integrante = id
+    
+  if starting_date:
+    where_clauses.append(func.DATE(registros.c.fecha_registro) >= starting_date)
+  
+  if (not (id_integrante is None)):
+    if option is None:
+      raise HTTPException(status.HTTP_400_BAD_REQUEST, 'No option specificated')
+
+    where_clauses.append(registros.c.id_integrante == id_integrante) 
+  
+  
+  stmt = (
+    select(registros)
+    .where(
+      and_(*where_clauses)
+    )
+  )
+  
+  print(f'Statement: {stmt}')
+    
+  rows = conn.execute(stmt).fetchall()
+
+  results = []
+  
+  for row in rows:
+    results.append(dict(row._mapping))
+  
+  
+  return {"results": results}
+    
 
 @registro_router.post('/registro')
 def create_registro(registro_data: CreatingRegistroModel ,current_integrante: IntegranteModel = Depends(get_current_active_integrante)):
