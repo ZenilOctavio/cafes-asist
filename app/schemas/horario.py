@@ -9,6 +9,6 @@ class CreatingHorario(BaseModel):
   dia: Dia
   entrada: time
   salida: time
-  
+
 class Horario(CreatingHorario):
   id_horario: int

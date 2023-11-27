@@ -1,6 +1,6 @@
 from .database import conn
 from models.horario import horarios
-from sqlalchemy import select, and_, insert
+from sqlalchemy import select, and_, insert, delete
 from schemas.horario import Horario, CreatingHorario
 from random import randint
 
@@ -90,6 +90,22 @@ def save_horario(new_horario: CreatingHorario) -> Horario | None:
   conn.commit()
   
   return find_horario(id_horario)
+
+def delete_horario_db(id_horario: int) -> Horario | None:
+  horario = find_horario(id_horario)
+  
+  if not horario:
+    return None
+  
+  stmt = (
+    delete(horarios)
+    .where(horarios.c.id_horario == id_horario)
+  )
+  
+  conn.execute(stmt)
+  conn.commit()
+  
+  return horario
   
   
   

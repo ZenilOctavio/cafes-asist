@@ -5,7 +5,7 @@ from schemas.integrante import IntegranteModel
 from sql.database import conn
 from sql.integrante import find_first_integrante
 from sql.tipo_integrante import find_first_tipo_integrante
-from sql.horario import isthere_conflict_horario, save_horario
+from sql.horario import isthere_conflict_horario, save_horario, delete_horario_db
 
 from models.horario import horarios
 from sqlalchemy import select, Select
@@ -75,5 +75,12 @@ def put_horario():
   pass
 
 @horario_router.delete('/horario')
-def delete_horario():
-  pass
+def delete_horario(id_horario:int, current_integrante: IntegranteModel = Depends(check_for_admin_permission)):
+  
+  horario_deleted = delete_horario_db(id_horario)
+
+  if not horario_deleted:
+    raise HTTPException(status.HTTP_404_NOT_FOUND, 'No horario with such id')
+  
+  return Response('Deleting successfully', status.HTTP_200_OK)
+  
